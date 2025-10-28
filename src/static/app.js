@@ -38,9 +38,40 @@ document.addEventListener("DOMContentLoaded", () => {
         if (details.participants && details.participants.length > 0) {
           const participantsList = document.createElement("ul");
           participantsList.className = "participants-list";
+          participantsList.style.listStyleType = "none"; // Hide bullet points
           details.participants.forEach((email) => {
             const li = document.createElement("li");
+            li.style.display = "flex";
+            li.style.alignItems = "center";
             li.textContent = email;
+
+            // Add delete icon
+            const deleteIcon = document.createElement("span");
+            deleteIcon.innerHTML = "&#128465;"; // Trash can emoji
+            deleteIcon.title = "Remove participant";
+            deleteIcon.style.cursor = "pointer";
+            deleteIcon.style.marginLeft = "8px";
+            deleteIcon.onclick = async () => {
+              if (confirm(`Remove ${email} from ${name}?`)) {
+                try {
+                  const response = await fetch(
+                    `/activities/${encodeURIComponent(name)}/unregister?email=${encodeURIComponent(email)}`,
+                    {
+                      method: "POST",
+                    }
+                  );
+                  const result = await response.json();
+                  if (response.ok) {
+                    fetchActivities(); // Refresh list
+                  } else {
+                    alert(result.detail || "Failed to remove participant.");
+                  }
+                } catch (error) {
+                  alert("Error removing participant.");
+                }
+              }
+            };
+            li.appendChild(deleteIcon);
             participantsList.appendChild(li);
           });
           participantsSection.appendChild(participantsList);
@@ -88,6 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Refresh activities after signup
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
